@@ -54,10 +54,11 @@ const variants = [
 function App() {
   const [products, setProducts] = useState([]);
 
-  //const filteredProducts = products.filter((p) => p.name == filteredName);
-  //console.log(filteredProducts);
+  const [filteredProducts, setFilteredProducts] = useState([]);
+
   const [hasCelebrated, setHasCelebrated] = useState(false);
   const [spareProducts, setSpareProducts] = useState([]);
+  console.log(spareProducts);
   useEffect(() => {
     const allBought = products.every((product) => product.isBought === true);
     if (
@@ -108,6 +109,7 @@ function App() {
         p.categoryId == selectedCategory
     );
     if (exists) {
+      setProductInput("");
       return;
     }
     const newProduct = {
@@ -127,6 +129,12 @@ function App() {
   const [filteredShopId, setFilteredShopId] = useState("");
   const [filteredCategoryId, setFilteredCategoryId] = useState("");
   const [filteredName, setFilteredName] = useState("");
+  const isFiltered =
+    filteredName.trim() !== "" ||
+    filteredShopId !== "" ||
+    filteredCategoryId !== "" ||
+    isRadioBought !== "dontCareRadio";
+
   console.log(isRadioBought, filteredShopId, filteredCategoryId, filteredName);
   const [debouncedName, setDebouncedName] = useState("");
   useEffect(() => {
@@ -138,18 +146,19 @@ function App() {
   }, [filteredName]);
 
   useEffect(() => {
-    const copyProducts = spareProducts.map((p) => ({ ...p }));
+    let filtered = [...products];
+    /*const copyProducts = spareProducts.map((p) => ({ ...p }));
     console.log(copyProducts);
-    let filteredCopyProducts = copyProducts;
-    const fuse = new Fuse(filteredCopyProducts, {
+    let filteredCopyProducts = copyProducts;*/
+    const fuse = new Fuse(filtered, {
       keys: ["name"],
       threshold: 0.4,
     });
-    filteredCopyProducts = debouncedName
+    filtered = debouncedName
       ? fuse.search(debouncedName).map((result) => result.item)
-      : copyProducts;
+      : products;
     if (filteredShopId || filteredCategoryId || isRadioBought) {
-      filteredCopyProducts = filteredCopyProducts.filter(
+      filtered = filtered.filter(
         (p) =>
           (!filteredShopId || p.shopId == filteredShopId) &&
           (!filteredCategoryId || p.categoryId == filteredCategoryId) &&
@@ -161,8 +170,9 @@ function App() {
               : null))
       );
 
-      setProducts(filteredCopyProducts);
-      console.log(
+      setFilteredProducts(filtered);
+    }
+    /*console.log(
         "filteredCopyProducts:",
         filteredCopyProducts,
         "filteredName:",
@@ -171,9 +181,9 @@ function App() {
         filteredShopId,
         "filteredCategoryId:",
         filteredCategoryId
-      );
+      );*/
 
-      const button = document.getElementsByTagName("button")[0];
+    /*const button = document.getElementsByTagName("button")[0];
       isRadioBought == "dontCareRadio" && !filteredShopId && !filteredCategoryId
         ? (button.disabled = false)
         : (button.disabled = true);
@@ -181,8 +191,14 @@ function App() {
       const button = document.getElementsByTagName("button")[0];
       button.disabled = false;
       setProducts(copyProducts);
-    }
-  }, [debouncedName, filteredShopId, filteredCategoryId, isRadioBought]);
+    }*/
+  }, [
+    products,
+    debouncedName,
+    filteredShopId,
+    filteredCategoryId,
+    isRadioBought,
+  ]);
 
   return (
     <>
@@ -282,34 +298,38 @@ function App() {
             <h2 className="text-center mt-5">ALINACAKLAR LİSTESİ</h2>
 
             <ListGroup as="ul">
-              {products.map((product, key) => (
-                <ListGroup.Item
-                  as="li"
-                  action
-                  key={key}
-                  variant={variants[key % variants.length]}
-                  className="d-flex"
-                  onClick={() => boughted(product)}
-                  style={{
-                    textDecoration: product.isBought ? "line-through" : "none",
-                  }}
-                >
-                  <span className="me-auto">{product.name}</span>{" "}
-                  <span>
-                    {shops.find((s) => s.id == product.shopId).name}
-                    {"/"}
-                    {
-                      categories.find((c) => c.id == product.categoryId).name
-                    }{" "}
-                    <IconButton
-                      sil={(e) => {
-                        e.stopPropagation();
-                        deleteProduct(product);
-                      }}
-                    />{" "}
-                  </span>
-                </ListGroup.Item>
-              ))}
+              {(isFiltered ? filteredProducts : products).map(
+                (product, key) => (
+                  <ListGroup.Item
+                    as="li"
+                    action
+                    key={key}
+                    variant={variants[key % variants.length]}
+                    className="d-flex"
+                    onClick={() => boughted(product)}
+                    style={{
+                      textDecoration: product.isBought
+                        ? "line-through"
+                        : "none",
+                    }}
+                  >
+                    <span className="me-auto">{product.name}</span>{" "}
+                    <span>
+                      {shops.find((s) => s.id == product.shopId).name}
+                      {"/"}
+                      {
+                        categories.find((c) => c.id == product.categoryId).name
+                      }{" "}
+                      <IconButton
+                        sil={(e) => {
+                          e.stopPropagation();
+                          deleteProduct(product);
+                        }}
+                      />{" "}
+                    </span>
+                  </ListGroup.Item>
+                )
+              )}
             </ListGroup>
           </Col>
           <Col className="mt-5" xs={12}>
